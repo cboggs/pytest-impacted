@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pytest-impacted"
 description = "A pytest plugin that selectively runs tests impacted by codechanges via git introspection, ASL parsing, and dependency graph analysis."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 authors = [
     { name = "PromptRomp", email = "promptromp.contact@gmail.com" },
 ]
@@ -22,6 +22,8 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -31,11 +33,11 @@ classifiers = [
 ]
 dependencies = [
     "astroid>=3.3.10",
-    "click>=8.2.0",
+    "click>=8.0.0",
     "gitpython>=3.1.44",
-    "networkx>=3.4.2",
+    "networkx>=3.0.0",
     "pytest>=8.0.0",
-    "rich>=14.0.0",
+    "rich>=13.7.1",
 ]
 dynamic = ["version"]
 
@@ -66,7 +68,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py39"
 
 [tool.ruff.format]
 quote-style = "double"
