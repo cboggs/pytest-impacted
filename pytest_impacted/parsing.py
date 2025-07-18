@@ -6,7 +6,7 @@ import logging
 import os
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import astroid
 
@@ -93,7 +93,7 @@ def parse_module_imports(module: types.ModuleType) -> list[str]:
     return list(imports)
 
 
-def is_module_path(module_path: str, package: str | None = None) -> bool:
+def is_module_path(module_path: str, package: Optional[str] = None) -> bool:
     """
     Checks if a given string represents a valid module path.
 
@@ -128,21 +128,16 @@ def is_test_module(module_name):
     """
     module_name_chunks = module_name.split(".")
 
-    match module_name_chunks:
-        case _ if module_name_chunks[-1].startswith("test_"):
-            is_test = True
-
-        case _ if module_name_chunks[-1].endswith("_test"):
-            is_test = True
-
-        case _ if "test" in module_name_chunks:
-            is_test = True
-
-        case _ if "tests" in module_name_chunks:
-            is_test = True
-
-        case _:
-            is_test = False
+    if module_name_chunks[-1].startswith("test_"):
+        is_test = True
+    elif module_name_chunks[-1].endswith("_test"):
+        is_test = True
+    elif "test" in module_name_chunks:
+        is_test = True
+    elif "tests" in module_name_chunks:
+        is_test = True
+    else:
+        is_test = False
 
     logging.debug("Module %s is a test module: %s", module_name, is_test)
 

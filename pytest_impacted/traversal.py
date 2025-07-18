@@ -6,6 +6,7 @@ import pkgutil
 import types
 from functools import lru_cache
 from pathlib import Path
+from typing import Union, Optional
 
 
 def package_name_to_path(package_name: str) -> str:
@@ -13,7 +14,7 @@ def package_name_to_path(package_name: str) -> str:
     return package_name.replace(".", "/")
 
 
-def path_to_package_name(path: Path | str) -> str:
+def path_to_package_name(path: Union[Path, str]) -> str:
     """Convert a path to a package name."""
     if not isinstance(path, Path):
         path = Path(path)
@@ -21,7 +22,7 @@ def path_to_package_name(path: Path | str) -> str:
     return importlib.import_module(path.name).__name__
 
 
-def iter_namespace(ns_package: str | types.ModuleType) -> list[pkgutil.ModuleInfo]:
+def iter_namespace(ns_package: Union[str, types.ModuleType]) -> list[pkgutil.ModuleInfo]:
     """iterate over all submodules of a namespace package.
 
     :param ns_package: namespace package (name or actual module)
@@ -31,15 +32,14 @@ def iter_namespace(ns_package: str | types.ModuleType) -> list[pkgutil.ModuleInf
     """
     logging.debug("Iterating over namespace for package: %s", ns_package)
 
-    match ns_package:
-        case str():
-            path = [package_name_to_path(ns_package)]
-            prefix = f"{ns_package}."
-        case types.ModuleType():
-            path = list(ns_package.__path__)
-            prefix = f"{ns_package.__name__}."
-        case _:
-            raise ValueError(f"Invalid namespace package: {ns_package}")
+    if isinstance(ns_package, str):
+        path = [package_name_to_path(ns_package)]
+        prefix = f"{ns_package}."
+    elif isinstance(ns_package, types.ModuleType):
+        path = list(ns_package.__path__)
+        prefix = f"{ns_package.__name__}."
+    else:
+        raise ValueError(f"Invalid namespace package: {ns_package}")
 
     module_infos = list(pkgutil.iter_modules(path=path, prefix=prefix))
 
@@ -49,7 +49,7 @@ def iter_namespace(ns_package: str | types.ModuleType) -> list[pkgutil.ModuleInf
 
 
 @lru_cache
-def import_submodules(package: str | types.ModuleType) -> dict[str, types.ModuleType]:
+def import_submodules(package: Union[str, types.ModuleType]) -> dict[str, types.ModuleType]:
     """Import all submodules of a module, recursively, including subpackages,
     and return a dict mapping their fully-qualified names to the module object.
 
@@ -78,7 +78,7 @@ def import_submodules(package: str | types.ModuleType) -> dict[str, types.Module
     return results
 
 
-def resolve_files_to_modules(filenames: list[str], ns_module: str, tests_package: str | None = None):
+def resolve_files_to_modules(filenames: list[str], ns_module: str, tests_package: Optional[str] = None):
     """Resolve file paths to their corresponding Python module objects."""
     # Get the path to the package
     path = Path(importlib.import_module(ns_module).__path__[0])

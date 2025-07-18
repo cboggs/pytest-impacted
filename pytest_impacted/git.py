@@ -3,7 +3,7 @@
 import warnings
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union
 
 try:
     from git import Repo
@@ -46,15 +46,14 @@ class GitStatus(StrEnum):
     @classmethod
     def from_git_diff_name_status(cls, status: str) -> "GitStatus":
         """Create a GitStatus from a git diff name status."""
-        match status:
-            case _ as status if status.startswith("R") and status[1:].isdigit():
-                # git diff --name-status output may report <X><score> for renamed files
-                return cls.RENAMED
-            case _ as status if status.startswith("C") and status[1:].isdigit():
-                # git diff --name-status output may report <X><score> for copied files
-                return cls.COPIED
-            case _:
-                return cls(status)
+        if status.startswith("R") and status[1:].isdigit():
+            # git diff --name-status output may report <X><score> for renamed files
+            return cls("R")
+        elif status.startswith("C") and status[1:].isdigit():
+            # git diff --name-status output may report <X><score> for copied files
+            return cls("C")
+        else:
+            return cls(status)
 
 
 class Change:
@@ -62,9 +61,9 @@ class Change:
 
     def __init__(
         self,
-        a_path: str | None = None,
-        b_path: str | None = None,
-        status: GitStatus | None = None,
+        a_path: Optional[str] = None,
+        b_path: Optional[str] = None,
+        status: Optional[GitStatus] = None,
     ):
         self.a_path = a_path
         self.b_path = b_path
@@ -74,12 +73,12 @@ class Change:
         return f"{self.status}\t{self.name}"
 
     @property
-    def name(self) -> str | None:
+    def name(self) -> Optional[str]:
         """The name of the file."""
         return self.a_path if self.a_path is not None else self.b_path
 
     @classmethod
-    def from_git_diff_name_status(cls, *, name: str | None, status: str | None) -> "Change":
+    def from_git_diff_name_status(cls, *, name: Optional[str], status: Optional[str]) -> "Change":
         """Create a Change from a git diff.
 
         Input is the output of `git diff --name-status`.
@@ -147,7 +146,7 @@ class ChangeSet:
         return cls(changes)
 
 
-def without_nones(items: list[Any | None]) -> list[Any]:
+def without_nones(items: list[Optional[Any]]) -> list[Any]:
     """Remove all Nones from the list."""
     return [item for item in items if item is not None]
 
@@ -158,7 +157,7 @@ def describe_index_diffs(diffs: list[Diff]) -> None:
         print(f"diff: {str(diff)}")
 
 
-def find_impacted_files_in_repo(repo_dir: str | Path, git_mode: GitMode, base_branch: str | None) -> list[str] | None:
+def find_impacted_files_in_repo(repo_dir: Union[str, Path], git_mode: GitMode, base_branch: Optional[str]) -> Optional[list[str]]:
     """Find impacted files in the repository. The definition of impacted is dependent on the git mode:
 
     UNSTAGED:
@@ -184,23 +183,22 @@ def find_impacted_files_in_repo(repo_dir: str | Path, git_mode: GitMode, base_br
 
     repo = Repo(path=Path(repo_dir))
 
-    match git_mode:
-        case GitMode.UNSTAGED:
-            impacted_files = impacted_files_for_unstaged_mode(repo)
+    if git_mode == GitMode.UNSTAGED:
+        impacted_files = impacted_files_for_unstaged_mode(repo)
 
-        case GitMode.BRANCH:
-            if not base_branch:
-                raise ValueError("Base branch is required for running in BRANCH git mode")
+    elif git_mode == GitMode.BRANCH:
+        if not base_branch:
+            raise ValueError("Base branch is required for running in BRANCH git mode")
 
-            impacted_files = impacted_files_for_branch_mode(repo, base_branch=base_branch)
+        impacted_files = impacted_files_for_branch_mode(repo, base_branch=base_branch)
 
-        case _:
-            raise ValueError(f"Invalid git mode: {git_mode}")
+    else:
+        raise ValueError(f"Invalid git mode: {git_mode}")
 
     return impacted_files
 
 
-def impacted_files_for_unstaged_mode(repo: Repo) -> list[str] | None:
+def impacted_files_for_unstaged_mode(repo: Repo) -> Optional[list[str]]:
     """Get the impacted files when in the UNSTAGED git mode."""
     if not repo.is_dirty():
         # No changes in the repository and we are working in unstanged mode, nack.
@@ -218,7 +216,7 @@ def impacted_files_for_unstaged_mode(repo: Repo) -> list[str] | None:
     return without_nones(impacted_files) or None
 
 
-def impacted_files_for_branch_mode(repo: Repo, base_branch: str) -> list[str] | None:
+def impacted_files_for_branch_mode(repo: Repo, base_branch: str) -> Optional[list[str]]:
     """Get the impacted files when in the BRANCH git mode."""
 
     current_branch = repo.head.reference
