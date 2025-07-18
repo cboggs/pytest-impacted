@@ -4,10 +4,11 @@ import warnings
 from pathlib import Path
 from typing import Any, Optional, Union
 
-try:
-    from enum import StrEnum
-except ImportError:
-    from typing_extensions import StrEnum
+from enum import Enum
+
+class StrEnum(str, Enum):
+    """String enum for Python 3.9 compatibility."""
+    pass
 
 try:
     from git import Repo
