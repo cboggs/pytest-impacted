@@ -1,9 +1,13 @@
 """Git related functions."""
 
 import warnings
-from enum import StrEnum
 from pathlib import Path
 from typing import Any, Optional, Union
+
+try:
+    from enum import StrEnum
+except ImportError:
+    from typing_extensions import StrEnum
 
 try:
     from git import Repo
